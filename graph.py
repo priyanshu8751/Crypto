@@ -12,20 +12,19 @@ def final_bal(file_name, column, amount, fraction_change, time_period):
     df.set_index('datetime', inplace=True)
     df['EMA'] = ta.EMA(df['close'], timeperiod=time_period)
     df['ATR'] = ta.ATR(df['high'], df['low'], df['close'], timeperiod=time_period)
-    plt.plot(df['close'], label='Close Prices')
-    plt.plot(df['EMA'], label=f'EMA {time_period} days', linestyle='--', color='red')
+    # plt.plot(df['close'], label='Close Prices')
+    # plt.plot(df['EMA'], label=f'EMA {time_period} days', linestyle='--', color='red')
     plt.xlabel('Date')
     plt.ylabel('Price')
     plt.title('EMA Plot')
     plt.legend()
-    plt.savefig("ema plot")
-    df.to_csv("btcusdt_15m_ema.csv")
     column_array = df[column].values
     column_array = [0] + column_array
     flag_purchased = 0
     tolerance = 0 # investment - 2atr
     units = 0
     cur_max = -1
+    current_price = [100]
     for i in range(0, len(column_array) - 1):
         cur_max = max(df['high'][i], cur_max)
         if (flag_purchased == 0) and (column_array[i] < column_array[i-1]) and (column_array[i] < column_array[i+1]):
@@ -43,6 +42,15 @@ def final_bal(file_name, column, amount, fraction_change, time_period):
             # units = 0
             flag_purchased = 0
             cur_max = -1
+        if (flag_purchased == 0):
+            current_price.append(amount)
+        else:
+            current_price.append(units * df['close'][i])
+    df['amount'] = current_price
+    df.to_csv("btcusdt_15m_ema.csv")
+    plt.plot(df['amount'], label='Amount', color='green')
+    plt.show()
+    plt.savefig("ema plot")
     print("Units we have", units)
     print("Investment we have", amount)
 
