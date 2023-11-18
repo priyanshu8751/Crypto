@@ -13,6 +13,7 @@ def final_bal(file_name, column, amount, fraction_change, time_period):
     df.set_index('datetime', inplace=True)
     df['EMA'] = ta.EMA(df['close'], timeperiod=time_period)
     df['ATR'] = ta.ATR(df['high'], df['low'], df['close'], timeperiod=time_period)
+    df['tolerance'] = df['open'] - 2 * df['ATR']
 
     plt.plot(df['close'], label='Close Prices')
     plt.plot(df['EMA'], label=f'EMA {time_period} days', linestyle='--', color='red')
@@ -33,12 +34,12 @@ def final_bal(file_name, column, amount, fraction_change, time_period):
 
         if (flag_purchased == 0) and (column_array[i] < column_array[i-1]) and (column_array[i] < column_array[i+1]):
             units = amount / df['open'][i]
+            tolerance = df['tolerance'][i]
             amount = 0
             flag_purchased = 1
-            tolerance = column_array[i] 
             signal.append(1)
 
-        elif (flag_purchased == 1) and (column_array[i] <= tolerance):
+        elif (flag_purchased == 1) and (df['close'][i] <= tolerance):
             amount = units * df['close'][i]
             units = 0
             flag_purchased = 0
@@ -70,7 +71,7 @@ def final_bal(file_name, column, amount, fraction_change, time_period):
     df['amount'] = current_price
     df.to_csv("btcusdt_15m_ema.csv")
 
-    # print (df.loc[df['signal'] != 0])
+    print (df.loc[df['signal'] != 0])
     
     plt.plot(df['amount'], label='Amount', color='green')
     plt.savefig("ema plot")
