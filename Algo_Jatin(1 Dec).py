@@ -60,14 +60,15 @@ for i in range(1,len(df)-1):
         FromLastTrade = 0
         k= i
         for j in reversed(range(k)):
-            if df['signal'][j] == 1:
+            if signal[j] == 1:
                 break
             else:
                 FromLastTrade += 1
         '''LastMax for finding the maximum of Amount in current trade to find drawdown'''
-        LastMax = df['Amount'].tail(FromLastTrade).max()
+        LastMax = max(CurrentAmount[-FromLastTrade:])
         
-        drawdown = (LastMax-df['Amount'])/LastMax
+        # check what should be used here i used current money (df[amount])
+        drawdown = (LastMax-CurrentMoney)/LastMax
         if(drawdown>=AllowedDrawDown): 
             ddflag = 1
         if(df['EMA7'][i] >= df['EMA21'][i]) and (df['EMA7'][i+1]<df['EMA21'][i+1]) or ddflag ==1 :
