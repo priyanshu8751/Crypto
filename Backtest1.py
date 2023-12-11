@@ -104,72 +104,46 @@ for i in range(0,len(df)):
         if df['Amount'][i] >= OpenPrice:
             TotalProfitableTrade += 1
 
-print("Total number of trades are {}".format(TotalTrades))
-print("Total Profitable trades are {}".format(TotalProfitableTrade))
-print("Percentage of successful trades is {}".format((TotalProfitableTrade/TotalTrades)*100))
+# print("Total number of trades are {}".format(TotalTrades))
+# print("Total Profitable trades are {}".format(TotalProfitableTrade))
+# print("Percentage of successful trades is {}".format((TotalProfitableTrade/TotalTrades)*100))
 df.to_csv("ResultsAfterSlippage19-20withReturn.csv")
-plt.plot(df['Amount'], label='Amount', color='green')
-plt.savefig("ema plot")
+# plt.plot(df['Amount'], label='Amount', color='green')
+# plt.savefig("ema plot")
 df['Close'] = df['close']
 df['Open'] = df['open']
 df['Low'] = df['low']
 df['High'] = df['high']
 df['Volume'] = df['volume']
+df['Open'] /= 1e6
+df['High'] /= 1e6
+df['Low'] /= 1e6
+df['Close'] /= 1e6
 # plt.show()
-
-from backtesting import Backtest, Strategy
 
 from backtesting import Backtest, Strategy
 
 class MyStrat(Strategy):
     def init(self):
-        self.allowed_drawdown = 0.4
-        self.in_market = False
-        self.current_money = 100
-        self.open_price = 0
-        self.signal = 0
+        self.current_money = 500
         self.lots = 0
 
     def next(self):
-        if not self.in_market:
-            if (self.data['EMA7'] > self.data['EMA21']) and (self.data['EMA7'][1] > self.data['EMA21'][1]):
-                slippage = self.data['Open'] * 0.001
-                self.lots = self.current_money / (self.data['Open'] + slippage)
-                self.in_market = True
-                self.signal = 1
-                self.open_price = self.data['Open'] + slippage
-            else:
-                self.signal = 0
-        else:
-            ddflag = 0
-            for i in range(len(self.data) - 1, 0, -1):
-                if self.signal == 1:
-                    break
-                else:
-                    if self.signal[i] == 1:
-                        break
-                    else:
-                        ddflag += 1
-
-            last_max = max(self.strategy.amount[-ddflag:])
-            drawdown = (last_max - self.current_money) / last_max
-            if drawdown >= self.allowed_drawdown:
-                ddflag = 1
-
-            if (self.data['EMA7'] >= self.data['EMA21']) and (self.data['EMA7'][1] < self.data['EMA21'][1]) or ddflag == 1:
-                self.current_money = self.data['Close'] * self.lots * 1.001
-                self.signal = -1
-                ret = ((self.data['Close'] * 1.001 - self.open_price) / self.open_price) * 100
-                self.ret.append(ret)
-                self.in_market = False
-            else:
-                self.current_money = self.data['Close'] * self.lots
-                self.signal = 0
-                ret = ((self.data['Close'] - self.open_price) / self.open_price) * 100
-                self.ret.append(ret)
+        slippage = self.data['Open'][-1] * 0.001  # Assuming slippage is 0.1%
+        
+        if self.data['signal'] == 1:
+            # print(self.lots, self.current_money, slippage, self.data['Open'][-1])
+            self.lots = self.current_money / (self.data['Open'][-1] + slippage)
+            self.buy(sl=self.data['Open'][-1] - slippage, tp=self.data['Open'][-1] + slippage, limit=self.data['Open'][-1])
+            self.current_money -= self.data['Open'][-1] * self.lots * 1.001  # Adjust for slippage
+        elif self.data['signal'] == -1:
+            # Use self.sell() to exit the long position
+            self.sell(size = 1)
+            # print(self.data, self.data['Close'])
+            self.current_money += self.data['Close'][-1] * self.lots * 0.999  # Adjust for slippage and assuming no commission
 
 
 # Assuming df is your DataFrame with OHLCV data
-bt = Backtest(df, MyStrat, cash=100, commission=0.00)
+bt = Backtest(df, MyStrat, cash=500, commission=0.00)
 result = bt.run()
 print(result)
