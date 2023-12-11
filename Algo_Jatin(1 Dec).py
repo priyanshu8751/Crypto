@@ -9,9 +9,8 @@ import pandas as pd
 import talib as ta
 import matplotlib.pyplot as plt
 import os
-import sys
 
-print(os.getcwd())
+# print(os.getcwd())
 
 df = pd.read_csv("btcusdt_15m19-20.csv")
 df['datetime'] = pd.to_datetime(df['datetime'])
@@ -21,7 +20,7 @@ df['EMA21'] = ta.EMA(df['close'],timeperiod=21)
 df['ATR'] = ta.ATR(df['high'], df['low'], df['close'], timeperiod=14)
 AllowedDrawDown = 0.4
 
-# variables 
+# variables d
 inmarket = 0
 # inmarket = 0 means out of market and inmarket = 1 means in the market
 CurrentAmount = []
@@ -111,5 +110,5 @@ print("Percentage of successful trades is {}".format((TotalProfitableTrade/Total
 df.to_csv("ResultsAfterSlippage19-20withReturn.csv")
 plt.plot(df['Amount'], label='Amount', color='green')
 plt.savefig("ema plot")
-plt.show()
+# plt.show()
 
