@@ -91,6 +91,85 @@ class crypto():
         df.to_csv("Result_ATR_daily.csv")
         return df
 
+    def strategy2(df):
+        # df = pd.read_csv("DailyData_18-22.csv")
+        df['datetime'] = pd.to_datetime(df['datetime'])
+        df.set_index('datetime', inplace=True)
+        df['EMA7'] = ta.EMA(df['close'], timeperiod=7)
+        df['EMA14'] = ta.EMA(df['close'], timeperiod=14)
+        df['EMA21'] = ta.EMA(df['close'],timeperiod=21)
+        df['ATR'] = ta.ATR(df['high'], df['low'], df['close'], timeperiod=14)
+        df['macd'], df['macdsignal'],df['histogram'] = ta.MACD(df['close'],12,26,9)
+        df.dropna(inplace = True)
+        df['signal'] = 0
+        inmarket = 0
+        buy = 0
+        open_price = -1
+        # df['amount'] = 0
+        df['sl'] = 0
+        buy_sl = 0
+        short_sl = 0
+        c = 2
+        for i in range(1,len(df)-1):
+            if inmarket == 0:
+                flag = 0
+                # if(df['EMA7'][i-1]>df['EMA7'][i] and df['EMA7'][i+1] > df['EMA7'][i]+5 ) or (df['EMA7'][i-1]<df['EMA21'][i-1] and df['EMA7'][i+1]>df['EMA21'][i+1] ) :
+                #     flag = 1
+                if(df['EMA7'][i-1]>df['EMA7'][i] and df['EMA7'][i+1] > df['EMA7'][i]+5 and df['histogram'][i]>=0) or (df['EMA7'][i-1]<df['EMA21'][i-1] and df['EMA7'][i+1]>df['EMA21'][i+1] and df['histogram'][i]>=0) :
+                    flag = 1
+                # if(df['EMA7'][i-1]<df['EMA21'][i-1] and df['EMA7'][i+1]>df['EMA21'][i+1]):
+                #     flag = 1
+                # if(df['EMA21'][i-1]<df['EMA21'][i] and df['EMA21'][i+1]+5 < df['EMA21'][i] ) or (df['EMA7'][i-1]>df['EMA21'][i-1] and df['EMA7'][i+1]<df['EMA21'][i+1] ):
+                #     flag = 2
+                elif(df['EMA21'][i-1]<df['EMA21'][i] and df['EMA21'][i+1]+5 < df['EMA21'][i] and df['histogram'][i]<0) or (df['EMA7'][i-1]>df['EMA21'][i-1] and df['EMA7'][i+1]<df['EMA21'][i+1] and df['histogram'][i]<0):
+                    flag = 2
+                # if(df['EMA7'][i-1]>df['EMA21'][i-1] and df['EMA7'][i+1]<df['EMA21'][i+1]):
+                #     flag = 2 
+                if flag == 1:
+                    buy = 1 
+                    inmarket = 1 
+                    df['signal'][i] = 1
+                    buy_sl = df['close'][i] - c*df['ATR'][i]
+                    df['sl'][i] = buy_sl
+                    # open_price = df['open'][i]
+                elif flag == 2:
+                    buy = 0
+                    inmarket = 1 
+                    df['signal'][i] = -1 
+                    short_sl = df['close'][i] + c*df['ATR'][i]
+                    df['sl'][i] = short_sl
+                    # open_price = df['open'][i]
+            elif inmarket == 1:
+                if buy == 1:
+                    # if df['close'][i]<= buy_sl:
+                    if (df['close'][i] <= df['sl'][i-1]) or (df['EMA14'][i-1]<df['EMA14'][i] and df['EMA14'][i+1] < df['EMA14'][i]) or (df['EMA7'][i-1]>df['EMA14'][i-1] and df['EMA7'][i+1]<df['EMA14'][i+1]):
+                        inmarket = 0
+                        df['signal'][i] = -1
+                        df['sl'][i] = 0
+                        buy_sl = 0
+                    else:
+                        temp_sl_buy = df['close'][i]-c*df['ATR'][i]
+                        buy_sl = max(df['sl'][i-1],temp_sl_buy)
+                        # df['sl'][i] = 0
+                        df['sl'][i] = buy_sl
+                        # buy_sl = 0
+                elif buy == 0:
+                    if (df['close'][i] >= df['sl'][i-1]) or (df['EMA7'][i-1]>df['EMA7'][i] and df['EMA7'][i+1] > df['EMA7'][i]) or (df['EMA7'][i-1]<df['EMA21'][i-1] and df['EMA7'][i+1]>df['EMA21'][i+1]):
+                        inmarket = 0
+                        df['signal'][i] = 1
+                        df['sl'][i] = 0
+                        short_sl = 0
+                    else:
+                        temp_sl_short = df['close'][i]+c*df['ATR'][i]
+                        short_sl = min(df['sl'][i-1], temp_sl_short)
+                        # df['sl'][i] = 0
+                        df['sl'][i] = short_sl
+
+        df['sum'] = 0
+        for i in range(1,len(df)):
+            df['sum'][i] = df['sum'][i-1]+df['signal'][i-1]
+        df.to_csv("Result_ATR_daily.csv")
+        return df
     # -*- coding: utf-8 -*-
 
     def count(df):
