@@ -1,2 +1,2 @@
 # Crypto
-Inter IIT Team 79
+Inter IIT Team 79: Maximise profit yield
